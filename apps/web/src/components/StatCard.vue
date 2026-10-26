@@ -90,5 +90,17 @@ withDefaults(
   font-size: 11px;
 }
 
+@media (max-width: 1050px) {
+  .metric-card {
+    padding: 14px;
+  }
+}
+
+@media (max-width: 760px) {
+  .metric-card {
+    min-height: 125px;
+  }
+}
+
 </style>
 
