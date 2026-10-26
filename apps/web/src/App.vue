@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
+import StatCard from './components/StatCard.vue'
 
 type ServiceOrderStatus = 'ENTRADA' | 'EM_ANDAMENTO' | 'CONCLUIDO'
 
@@ -98,7 +99,7 @@ function createServiceOrder() {
         <span class="brand-icon">N</span>
 
         <span class="brand-text">
-          <strong>Noturna</strong>
+          <strong>Noturna Celulares</strong>
           <small>GESTÃO DE SERVIÇOS</small>
         </span>
       </a>
@@ -165,37 +166,29 @@ function createServiceOrder() {
       </section>
 
       <section class="metrics-section" aria-label="Resumo das ordens">
-        <article class="metric-card">
-          <div class="metric-heading">
-            <span>Novas entradas</span>
-            <span class="metric-icon entry-icon">↘</span>
-          </div>
+        <StatCard
+          title="Novas entradas"
+          :value="statusCounts.ENTRADA"
+          description="Aguardando avaliação"
+          icon="↘"
+          variant="entry"
+        />
 
-          <strong class="metric-value">{{ statusCounts.ENTRADA }}</strong>
-          <span class="metric-description">Aguardando avaliação</span>
-        </article>
+        <StatCard
+          title="Em andamento"
+          :value="statusCounts.EM_ANDAMENTO"
+          description="Em reparo ou avaliação"
+          icon="◷"
+          variant="progress"
+        />
 
-        <article class="metric-card">
-          <div class="metric-heading">
-            <span>Em andamento</span>
-            <span class="metric-icon progress-icon">◷</span>
-          </div>
-
-          <strong class="metric-value">
-            {{ statusCounts.EM_ANDAMENTO }}
-          </strong>
-          <span class="metric-description">Em reparo ou avaliação</span>
-        </article>
-
-        <article class="metric-card">
-          <div class="metric-heading">
-            <span>Concluídas</span>
-            <span class="metric-icon completed-icon">✓</span>
-          </div>
-
-          <strong class="metric-value">{{ statusCounts.CONCLUIDO }}</strong>
-          <span class="metric-description">Serviços finalizados</span>
-        </article>
+        <StatCard
+          title="Concluídas"
+          :value="statusCounts.CONCLUIDO"
+          description="Serviços finalizados"
+          icon="✓"
+          variant="completed"
+        />
       </section>
 
       <section id="orders" class="orders-section">
@@ -473,12 +466,6 @@ a {
 
 .topbar,
 .section-heading,
-.metric-heading {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-}
 
 .breadcrumb {
   margin: 0 0 13px;
@@ -574,57 +561,9 @@ a {
   margin-top: 25px;
 }
 
-.metric-card {
-  display: flex;
-  min-height: 148px;
-  flex-direction: column;
-  padding: 19px;
-  border: 1px solid #e8ebf1;
-  border-radius: 12px;
-  background: #fff;
-}
-
 .metric-heading {
   color: #727c8f;
   font-size: 12px;
-}
-
-.metric-icon {
-  display: grid;
-  width: 31px;
-  height: 31px;
-  place-items: center;
-  border-radius: 9px;
-  font-size: 17px;
-  font-weight: 700;
-}
-
-.entry-icon {
-  background: #fff3e4;
-  color: #bd7b28;
-}
-
-.progress-icon {
-  background: #eaf0ff;
-  color: #4669c1;
-}
-
-.completed-icon {
-  background: #e5f6ed;
-  color: #28855c;
-}
-
-.metric-value {
-  margin-top: 12px;
-  font-size: 28px;
-  font-weight: 720;
-  letter-spacing: -1px;
-}
-
-.metric-description {
-  margin-top: 5px;
-  color: #969eac;
-  font-size: 11px;
 }
 
 .orders-section {
