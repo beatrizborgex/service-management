@@ -1,0 +1,41 @@
+# Variáveis de ambiente e segredos
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Dependências
+node_modules/
+
+# Saídas de build
+dist/
+build/
+
+# Arquivos gerados localmente
+coverage/
+*.log
+
+# Cliente Prisma gerado
+apps/api/src/generated/prisma/
+
+# Arquivos gerados por ferramentas de IA e desenvolvimento
+apps/api/.agents/
+apps/api/.claude/
+apps/api/.cursor/
+apps/api/.devin/
+
+# Scripts temporários de teste e diagnóstico
+apps/api/check-test-user.ts
+apps/api/link-test-user.ts
+apps/api/test-db.ts
+apps/api/test-supabase-login.cjs
+apps/api/scripts/link-test-owner.ts
+
+# Arquivos e configurações locais do editor
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Sistema operacional
+.DS_Store
+Thumbs.db

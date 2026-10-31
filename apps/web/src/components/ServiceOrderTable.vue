@@ -1,3 +1,4 @@
+
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import type {
@@ -8,6 +9,13 @@ import type {
 const props = defineProps<{
   orders: ServiceOrder[]
   statusLabels: Record<ServiceOrderStatus, string>
+}>()
+
+const emit = defineEmits<{
+  updateStatus: [data: {
+    id: number
+    status: ServiceOrderStatus
+  }]
 }>()
 
 const searchTerm = ref('')
@@ -23,8 +31,11 @@ const filteredOrders = computed(() => {
     [
       String(order.id),
       order.customer,
-      order.device,
+      order.phone,
+      order.deviceBrand,
+      order.deviceModel,
       order.issue,
+      props.statusLabels[order.status],
     ].some((value) => value.toLowerCase().includes(term)),
   )
 })
@@ -68,45 +79,68 @@ const filteredOrders = computed(() => {
             <td>
               <div class="customer-cell">
                 <strong>{{ order.customer }}</strong>
-                <span>{{ order.device }}</span>
+                <span>{{ order.phone }}</span>
+                <span>{{ order.deviceBrand }} — {{ order.deviceModel }}</span>
               </div>
             </td>
 
             <td>{{ order.issue }}</td>
 
             <td>
-              <span
-                class="status-badge"
+              <select
+                :value="order.status"
+                :aria-label="`Status da ordem ${order.id}`"
+                class="status-select"
                 :class="`status-${order.status.toLowerCase()}`"
+                @change="(event) => {
+                  const status = (event.target as HTMLSelectElement).value as ServiceOrderStatus
+                  emit('updateStatus', {
+                    id: order.id,
+                    status,
+                  })
+                }"
               >
-                {{ statusLabels[order.status] }}
-              </span>
+                <option value="ENTRADA">Entrada</option>
+                <option value="EM_ANDAMENTO">Em andamento</option>
+                <option value="CONCLUIDO">Concluído</option>
+              </select>
             </td>
 
             <td class="date-cell">{{ order.receivedAt }}</td>
           </tr>
 
-          <tr v-if="filteredOrders.length === 0">
-            <td colspan="5" class="empty-state">
-              Nenhuma ordem encontrada para essa busca.
-            </td>
-          </tr>
+        <tr v-if="props.orders.length === 0">
+          <td colspan="5" class="empty-state">
+            Nenhuma ordem de serviço cadastrada ainda.
+          </td>
+        </tr>
+
+        <tr v-else-if="filteredOrders.length === 0">
+          <td colspan="5" class="empty-state">
+            Nenhuma ordem encontrada para essa busca.
+          </td>
+        </tr>
         </tbody>
       </table>
     </div>
 
     <footer class="table-footer">
       <span>
-        {{ filteredOrders.length }}
-        {{ filteredOrders.length === 1 ? 'ordem encontrada' : 'ordens encontradas' }}
+        <template v-if="props.orders.length === 0">
+          Nenhuma ordem cadastrada
+        </template>
+
+        <template v-else>
+          {{ filteredOrders.length }}
+          {{ filteredOrders.length === 1 ? 'ordem encontrada' : 'ordens encontradas' }}
+        </template>
       </span>
 
-      <span>Exibindo dados fictícios para desenvolvimento</span>
     </footer>
   </section>
 </template>
 
-<style>
+<style scoped>
 .orders-section {
   margin-top: 36px;
   overflow: hidden;
@@ -213,13 +247,20 @@ td {
   font-size: 10px;
 }
 
-.status-badge {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 9px;
+.status-select {
+  max-width: 150px;
+  padding: 6px 8px;
+  border: 1px solid transparent;
   border-radius: 6px;
+  font-family: inherit;
   font-size: 10px;
   font-weight: 650;
+  cursor: pointer;
+}
+
+.status-select:focus-visible {
+  outline: 2px solid #354a7b;
+  outline-offset: 2px;
 }
 
 .status-entrada {

@@ -1,0 +1,143 @@
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum UserRole {
+  ADMIN
+  OWNER
+  EMPLOYEE
+}
+
+enum CompanyStatus {
+  ACTIVE
+  SUSPENDED
+}
+
+enum ServiceOrderStatus {
+  ENTRADA
+  EM_ANDAMENTO
+  CONCLUIDO
+  CANCELADO
+}
+
+model Company {
+  id                     String        @id @default(cuid())
+  name                   String
+  status                 CompanyStatus @default(ACTIVE)
+  lastServiceOrderNumber Int           @default(0)
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+
+  users         User[]
+  clients       Client[]
+  serviceOrders ServiceOrder[]
+}
+
+model User {
+  id             String   @id @default(cuid())
+  supabaseUserId String   @unique
+  name           String
+  email          String
+  role           UserRole @default(EMPLOYEE)
+  companyId      String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  company              Company                   ? @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  createdServiceOrders ServiceOrder[]             @relation("ServiceOrderCreatedBy")
+  statusHistory        ServiceOrderStatusHistory[] @relation("StatusChangedBy")
+
+  @@unique([companyId, email])
+  @@index([companyId])
+}
+
+model Client {
+  id        String   @id @default(cuid())
+  companyId String
+  name      String
+  phone     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company       Company        @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  serviceOrders ServiceOrder[]
+
+  @@index([companyId])
+  @@index([companyId, phone])
+}
+
+model ServiceOrder {
+  id        String @id @default(cuid())
+  companyId String
+  number    Int
+
+  clientId    String
+  clientName  String
+  clientPhone String
+
+  deviceBrand  String
+  deviceModel  String
+  deviceColor  String?
+  accessories  String[] @default([])
+  devicePasswordEncrypted String?
+
+  reportedProblem String
+  diagnosis       String?
+  estimatedPrice  Decimal? @db.Decimal(10, 2)
+
+  status ServiceOrderStatus @default(ENTRADA)
+
+  expectedDeliveryAt DateTime?
+  completedAt        DateTime?
+  canceledAt         DateTime?
+  cancellationReason String?
+
+  warrantyDays Int?
+
+  qrCodeToken String @unique @default(cuid())
+
+  createdByUserId String
+  previousServiceOrderId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Restrict)
+  client    Client  @relation(fields: [clientId], references: [id], onDelete: Restrict)
+  createdBy User    @relation("ServiceOrderCreatedBy", fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  previousServiceOrder ServiceOrder?  @relation("ServiceOrderReturns", fields: [previousServiceOrderId], references: [id], onDelete: Restrict)
+  returnServiceOrders  ServiceOrder[] @relation("ServiceOrderReturns")
+
+  statusHistory ServiceOrderStatusHistory[]
+
+  @@unique([companyId, number])
+  @@index([companyId, status])
+  @@index([companyId, clientId])
+  @@index([companyId, createdAt])
+  @@index([previousServiceOrderId])
+}
+
+model ServiceOrderStatusHistory {
+  id             String @id @default(cuid())
+  serviceOrderId String
+  changedByUserId String
+
+  fromStatus ServiceOrderStatus?
+  toStatus   ServiceOrderStatus
+  reason     String?
+
+  createdAt DateTime @default(now())
+
+  serviceOrder ServiceOrder @relation(fields: [serviceOrderId], references: [id], onDelete: Restrict)
+  changedBy    User         @relation("StatusChangedBy", fields: [changedByUserId], references: [id], onDelete: Restrict)
+
+  @@index([serviceOrderId, createdAt])
+  @@index([changedByUserId])
+}

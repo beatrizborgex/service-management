@@ -1,49 +1,64 @@
-
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import StatCard from './components/StatCard.vue'
 import ServiceOrderTable from './components/ServiceOrderTable.vue'
+import ServiceOrderForm from './components/ServiceOrderForm.vue'
 import type {
   ServiceOrder,
   ServiceOrderStatus,
 } from './types/service-order'
 
 const companyName = 'Noturna Celulares'
+const STORAGE_KEY = 'noturna-celulares-service-orders'
 
-const serviceOrders = ref<ServiceOrder[]>([
-  {
-    id: 1025,
-    customer: 'Mariana Oliveira',
-    device: 'Samsung Galaxy A54',
-    issue: 'Tela danificada',
-    status: 'ENTRADA',
-    receivedAt: '09:15',
-  },
-  {
-    id: 1024,
-    customer: 'Carlos Mendes',
-    device: 'iPhone 13',
-    issue: 'Bateria com baixa duração',
-    status: 'EM_ANDAMENTO',
-    receivedAt: 'Ontem',
-  },
-  {
-    id: 1023,
-    customer: 'Juliana Santos',
-    device: 'Motorola Edge 40',
-    issue: 'Conector de carregamento',
-    status: 'CONCLUIDO',
-    receivedAt: 'Ontem',
-  },
-  {
-    id: 1022,
-    customer: 'Rafael Costa',
-    device: 'Xiaomi Redmi Note 12',
-    issue: 'Aparelho não liga',
-    status: 'EM_ANDAMENTO',
-    receivedAt: '23 out.',
-  },
-])
+function isValidServiceOrder(value: unknown): value is ServiceOrder {
+  if (typeof value !== 'object' || value === null) {
+    return false
+  }
+
+  const order = value as Record<string, unknown>
+
+  return (
+    typeof order.id === 'number' &&
+    typeof order.customer === 'string' &&
+    typeof order.phone === 'string' &&
+    typeof order.deviceBrand === 'string' &&
+    typeof order.deviceModel === 'string' &&
+    typeof order.issue === 'string' &&
+    typeof order.receivedAt === 'string' &&
+    (
+      order.status === 'ENTRADA' ||
+      order.status === 'EM_ANDAMENTO' ||
+      order.status === 'CONCLUIDO'
+    )
+  )
+}
+
+function loadServiceOrders(): ServiceOrder[] | null {
+  const savedOrders = localStorage.getItem(STORAGE_KEY)
+
+  if (!savedOrders) {
+    return null
+  }
+
+  try {
+    const parsedOrders: unknown = JSON.parse(savedOrders)
+
+    if (!Array.isArray(parsedOrders)) {
+      return null
+    }
+
+    if (!parsedOrders.every(isValidServiceOrder)) {
+      return null
+    }
+
+    return parsedOrders
+  } catch {
+    return null
+  }
+}
+
+const serviceOrders = ref<ServiceOrder[]>([])
 
 const statusLabels: Record<ServiceOrderStatus, string> = {
   ENTRADA: 'Entrada',
@@ -62,10 +77,74 @@ const statusCounts = computed(() => ({
     (order) => order.status === 'CONCLUIDO',
   ).length,
 }))
+const isOrderFormVisible = ref(false)
 
 function createServiceOrder() {
-  window.alert('A abertura de OS será implementada na próxima etapa.')
+  isOrderFormVisible.value = !isOrderFormVisible.value
 }
+
+function addServiceOrder(data: {
+  customer: string
+  phone: string
+  deviceBrand: string
+  deviceModel: string
+  issue: string
+}) {
+  const nextId =
+    Math.max(0, ...serviceOrders.value.map(order => order.id)) + 1
+
+  const receivedAt = new Date().toLocaleTimeString('pt-BR', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+  serviceOrders.value.unshift({
+    id: nextId,
+    customer: data.customer,
+    phone: data.phone,
+    deviceBrand: data.deviceBrand,
+    deviceModel: data.deviceModel,
+    issue: data.issue,
+    status: 'ENTRADA',
+    receivedAt: `Hoje, ${receivedAt}`,
+  })
+
+  isOrderFormVisible.value = false
+}
+
+function updateServiceOrderStatus(data: {
+  id: number
+  status: ServiceOrderStatus
+}) {
+  const order = serviceOrders.value.find(
+    order => order.id === data.id,
+  )
+
+  if (!order) {
+    return
+  }
+
+  order.status = data.status
+}
+onMounted(() => {
+  const savedOrders = loadServiceOrders()
+
+  if (savedOrders !== null) {
+    serviceOrders.value = savedOrders
+  }
+
+  watch(
+    serviceOrders,
+    (orders) => {
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(orders),
+      )
+    },
+    { deep: true },
+  )
+})
+
 </script>
 
 <template>
@@ -166,11 +245,27 @@ function createServiceOrder() {
           variant="completed"
         />
       </section>
+      <section v-if="isOrderFormVisible" class="order-form-panel">
+        <div class="order-form-heading">
+          <h2>Nova ordem de serviço</h2>
+
+          <button
+            type="button"
+            class="cancel-button"
+            @click="createServiceOrder"
+          >
+            Cancelar
+          </button>
+        </div>
+
+        <ServiceOrderForm @submit="addServiceOrder" />
+      </section>
 
       <ServiceOrderTable
         id="orders"
         :orders="serviceOrders"
         :status-labels="statusLabels"
+         @update-status="updateServiceOrderStatus"
       />
     </main>
   </div>
@@ -541,5 +636,37 @@ a {
   .metrics-section {
     grid-template-columns: 1fr;
   }
+}
+
+.order-form-panel {
+  margin-bottom: 24px;
+  padding: 24px;
+  border: 1px solid #e4e8f0;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.order-form-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.order-form-heading h2 {
+  margin: 0;
+  color: #202a3b;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.cancel-button {
+  padding: 8px 12px;
+  border: 1px solid #dce1eb;
+  border-radius: 8px;
+  background: #fff;
+  color: #344054;
+  cursor: pointer;
 }
 </style>

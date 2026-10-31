@@ -1,4 +1,3 @@
-
 export type ServiceOrderStatus =
   | 'ENTRADA'
   | 'EM_ANDAMENTO'
@@ -7,7 +6,9 @@ export type ServiceOrderStatus =
 export interface ServiceOrder {
   id: number
   customer: string
-  device: string
+  phone: string
+  deviceBrand: string
+  deviceModel: string
   issue: string
   status: ServiceOrderStatus
   receivedAt: string
